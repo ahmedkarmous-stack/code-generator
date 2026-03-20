@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Code QR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Générateur de Code QR</h1>
+        <p>Créez et comprenez les codes QR</p>
+    </header>
+
+    <main>
+        <section class="generator">
+            <h2>Générer un Code QR</h2>
+            <div class="input-group">
+                <label for="qr-input">Entrez votre texte ou URL :</label>
+                <input type="text" id="qr-input" placeholder="https://exemple.com ou votre texte...">
+                <button id="generate-btn">Générer le QR Code</button>
+            </div>
+
+            <div class="qr-result" id="qr-result">
+                <div id="qr-code"></div>
+                <button id="download-btn" class="hidden">Télécharger le QR Code</button>
+            </div>
+
+            <div class="self-reference">
+                <h3>Code QR de ce site</h3>
+                <p>Scannez ce code pour accéder à ce générateur</p>
+                <div id="self-qr"></div>
+            </div>
+        </section>
+
+        <section class="explanation">
+            <h2>Comment fonctionne un Code QR ?</h2>
+
+            <article>
+                <h3>Qu'est-ce qu'un Code QR ?</h3>
+                <p>Un <strong>Code QR</strong> (Quick Response Code) est une matrice de données bidimensionnelle composée de modules noirs et blancs. Inventé en 1994 par Masahiro Hara chez Denso Wave, il peut stocker jusqu'à 7089 caractères numériques ou 4296 caractères alphanumériques.</p>
+                <p>Contrairement aux codes-barres linéaires, les codes QR encodent l'information dans deux dimensions, permettant une densité de données bien supérieure et une lecture omnidirectionnelle.</p>
+            </article>
+
+            <article>
+                <h3>Structure anatomique d'un Code QR</h3>
+                <div class="qr-diagram">
+                    <div class="diagram-item">
+                        <span class="icon">◰</span>
+                        <h5>Finder Patterns</h5>
+                        <p>3 carrés de 7x7 modules dans les coins pour détecter la position et l'orientation</p>
+                    </div>
+                    <div class="diagram-item">
+                        <span class="icon">◫</span>
+                        <h5>Alignment Pattern</h5>
+                        <p>Carrés de 5x5 modules pour corriger la distorsion perspective</p>
+                    </div>
+                    <div class="diagram-item">
+                        <span class="icon">┄</span>
+                        <h5>Timing Patterns</h5>
+                        <p>Lignes alternées noir/blanc définissant la grille de coordonnées</p>
+                    </div>
+                    <div class="diagram-item">
+                        <span class="icon">▦</span>
+                        <h5>Format Information</h5>
+                        <p>15 bits encodant le niveau de correction et le masque appliqué</p>
+                    </div>
+                    <div class="diagram-item">
+                        <span class="icon">◧</span>
+                        <h5>Version Information</h5>
+                        <p>18 bits (versions 7+) indiquant la taille de la matrice</p>
+                    </div>
+                    <div class="diagram-item">
+                        <span class="icon">▤</span>
+                        <h5>Data & Error Correction</h5>
+                        <p>Zone principale contenant les données encodées et codes Reed-Solomon</p>
+                    </div>
+                </div>
+            </article>
+
+            <article>
+                <h3>Processus technique de génération</h3>
+
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Analyse et choix du mode d'encodage</h4>
+                        <p>Le contenu est analysé pour déterminer le mode optimal : <strong>Numérique</strong> (0-9), <strong>Alphanumérique</strong> (0-9, A-Z, espace, $%*+-./), <strong>Byte</strong> (ISO 8859-1/UTF-8), ou <strong>Kanji</strong>.</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Indicateurs de mode (4 bits)</span>
+<span class="keyword">Numérique</span>:     <span class="number">0001</span>  <span class="comment">// 10 bits pour 3 chiffres</span>
+<span class="keyword">Alphanumérique</span>: <span class="number">0010</span>  <span class="comment">// 11 bits pour 2 caractères</span>
+<span class="keyword">Byte</span>:           <span class="number">0100</span>  <span class="comment">// 8 bits par caractère</span>
+<span class="keyword">Kanji</span>:          <span class="number">1000</span>  <span class="comment">// 13 bits par caractère</span>
+                            </code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Encodage des données en binaire</h4>
+                        <p>Les données sont converties en flux binaire selon le mode. Pour le mode alphanumérique, chaque paire de caractères est convertie : <code>(valeur1 × 45) + valeur2</code> en 11 bits.</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Exemple: encoder "AB"</span>
+<span class="string">"A"</span> = <span class="number">10</span>, <span class="string">"B"</span> = <span class="number">11</span>
+(<span class="number">10</span> × <span class="number">45</span>) + <span class="number">11</span> = <span class="number">461</span>
+<span class="number">461</span> → <span class="number">00111001101</span> <span class="comment">(11 bits)</span>
+                            </code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Construction du message binaire</h4>
+                        <p>Le flux final combine : indicateur de mode + compteur de caractères + données + terminateur (0000) + padding jusqu'à la capacité.</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Structure du message</span>
+[<span class="keyword">Mode</span>][<span class="keyword">Count</span>][<span class="keyword">Data...</span>][<span class="keyword">Terminator</span>][<span class="keyword">Padding</span>]
+  4b    9-16b   variable      4b       11101100 00010001...
+                            </code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Génération des codes de correction d'erreurs (Reed-Solomon)</h4>
+                        <p>L'algorithme Reed-Solomon génère des codewords de correction permettant de récupérer les données même si une partie du QR est endommagée. Les données sont divisées en blocs, chacun recevant ses propres codewords EC.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Niveau</th>
+                                    <th>Récupération</th>
+                                    <th>Overhead</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>L</strong> (Low)</td>
+                                    <td>~7% des codewords</td>
+                                    <td>~20%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>M</strong> (Medium)</td>
+                                    <td>~15% des codewords</td>
+                                    <td>~38%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Q</strong> (Quartile)</td>
+                                    <td>~25% des codewords</td>
+                                    <td>~55%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>H</strong> (High)</td>
+                                    <td>~30% des codewords</td>
+                                    <td>~65%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Entrelacement des données</h4>
+                        <p>Les codewords de données et de correction sont entrelacés pour distribuer les erreurs potentielles. Si un bloc est endommagé, les erreurs sont réparties sur plusieurs blocs logiques.</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Entrelacement de 2 blocs</span>
+<span class="keyword">Bloc 1</span>: D1, D2, D3 | EC1, EC2
+<span class="keyword">Bloc 2</span>: D4, D5, D6 | EC3, EC4
+<span class="keyword">Final</span>:  D1, D4, D2, D5, D3, D6, EC1, EC3, EC2, EC4
+                            </code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <h4>Placement dans la matrice</h4>
+                        <p>Les bits sont placés dans la matrice en suivant un motif en zigzag ascendant/descendant, en évitant les zones réservées (finder patterns, timing patterns, etc.).</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Direction de placement des modules</span>
+    ↑ ↑         Colonnes traitées par paires
+    │ │         de droite à gauche
+  ┌─┴─┴─┐
+  │ 2 1 │ ←── Commence en bas à droite
+  │ 4 3 │     Remonte en zigzag
+  │ 6 5 │     Puis redescend
+  └─────┘
+                            </code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">7</div>
+                    <div class="step-content">
+                        <h4>Application du masque</h4>
+                        <p>8 motifs de masque sont testés pour équilibrer la distribution noir/blanc et éviter les patterns problématiques. Le masque avec le score de pénalité le plus bas est choisi.</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Formules des 8 masques (appliqués avec XOR)</span>
+<span class="number">0</span>: (row + col) mod 2 == 0
+<span class="number">1</span>: row mod 2 == 0
+<span class="number">2</span>: col mod 3 == 0
+<span class="number">3</span>: (row + col) mod 3 == 0
+<span class="number">4</span>: (row/2 + col/3) mod 2 == 0
+<span class="number">5</span>: (row×col) mod 2 + (row×col) mod 3 == 0
+<span class="number">6</span>: ((row×col) mod 2 + (row×col) mod 3) mod 2 == 0
+<span class="number">7</span>: ((row+col) mod 2 + (row×col) mod 3) mod 2 == 0
+                            </code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">8</div>
+                    <div class="step-content">
+                        <h4>Ajout des informations de format et version</h4>
+                        <p>Les 15 bits de format (niveau EC + masque) sont encodés avec BCH et placés autour des finder patterns. Pour les versions 7+, 18 bits de version sont ajoutés.</p>
+                        <div class="code-block">
+                            <code>
+<span class="comment">// Format Information (15 bits)</span>
+[<span class="keyword">EC Level</span>][<span class="keyword">Mask Pattern</span>][<span class="keyword">BCH Error Correction</span>]
+    2b          3b                 10b
+
+<span class="comment">// XOR avec masque fixe pour éviter les patterns uniformes</span>
+<span class="function">mask</span> = <span class="number">101010000010010</span>
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <article>
+                <h3>Versions et capacités</h3>
+                <p>Il existe 40 versions de QR codes, de 21×21 modules (version 1) à 177×177 modules (version 40). Chaque version supérieure ajoute 4 modules par côté.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Taille</th>
+                            <th>Capacité max (L)</th>
+                            <th>Capacité max (H)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>21×21</td>
+                            <td>25 alphanum</td>
+                            <td>10 alphanum</td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td>57×57</td>
+                            <td>395 alphanum</td>
+                            <td>174 alphanum</td>
+                        </tr>
+                        <tr>
+                            <td>25</td>
+                            <td>117×117</td>
+                            <td>1853 alphanum</td>
+                            <td>822 alphanum</td>
+                        </tr>
+                        <tr>
+                            <td>40</td>
+                            <td>177×177</td>
+                            <td>4296 alphanum</td>
+                            <td>1852 alphanum</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article>
+                <h3>Algorithme Reed-Solomon simplifié</h3>
+                <p>La correction d'erreurs utilise les mathématiques des corps de Galois GF(2⁸). Les données sont traitées comme coefficients d'un polynôme, divisé par un polynôme générateur.</p>
+                <div class="code-block">
+                    <code>
+<span class="comment">// Génération des codewords EC</span>
+<span class="keyword">function</span> <span class="function">generateEC</span>(data, ecCount):
+    <span class="comment">// Polynôme générateur de degré ecCount</span>
+    generator = <span class="function">buildGenerator</span>(ecCount)
+
+    <span class="comment">// Division polynomiale dans GF(2^8)</span>
+    <span class="keyword">for</span> i <span class="keyword">in</span> data:
+        coef = data[i] <span class="keyword">XOR</span> result[0]
+        result.shift()
+        <span class="keyword">for</span> j <span class="keyword">in</span> generator:
+            result[j] <span class="keyword">XOR=</span> <span class="function">gfMul</span>(generator[j], coef)
+
+    <span class="keyword">return</span> result <span class="comment">// Codewords de correction</span>
+                    </code>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>Générateur de Code QR — Encodage et correction d'erreurs en temps réel</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
