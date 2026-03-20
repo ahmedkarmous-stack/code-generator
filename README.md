@@ -16,10 +16,6 @@ Un site web moderne pour générer des codes QR avec une explication technique d
 - JavaScript vanilla
 - QRCode.js (bibliothèque de génération)
 
-## Démo
-
-Visitez le site : [https://votre-username.github.io/qr-code-generator](https://votre-username.github.io/qr-code-generator)
-
 ## Licence
 
 MIT
